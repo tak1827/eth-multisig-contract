@@ -33,7 +33,7 @@ contract Multisig is Context, EIP712 {
     // Mapping to keep track of all hashes (message or transaction) that have been approved by ANY owners
     mapping(address => mapping(bytes32 => uint256)) public approvedHashes;
 
-    // event ControlledDeployed(address indexed controlled);
+    event Called(address caller, uint256 value, bytes data, bytes returndata);
 
     /**
      * Modifier that will execute internal code block only if the sender is an authorized signer on this wallet
@@ -111,16 +111,19 @@ contract Multisig is Context, EIP712 {
         payable
         virtual
         onlySigner
-        returns (bytes memory returndata)
+        returns (bytes memory)
     {
         require(signatures.length + 1 >= threshold, "insufficient signatures");
         _verifySigs(_hashTypedDataV4(keccak256(abi.encode(data))), signatures);
 
-        return
-            controlled.functionCallWithValue(
-                data,
-                msg.value,
-                "faild to call controlled"
-            );
+        bytes memory returndata = controlled.functionCallWithValue(
+            data,
+            msg.value,
+            "faild to call controlled"
+        );
+
+        emit Called(_msgSender(), msg.value, data, returndata);
+
+        return returndata;
     }
 }
