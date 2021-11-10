@@ -14,6 +14,7 @@ import "./MockERC721.sol";
  * - N and M are fixed at the deploy moment
  * - The access controlled contract is instantiated at the deploy moment
  *   the controlled extend `Ownable`, so that controlled only via this multisig
+ * - the length of signers CANNOT be changed once they are set
  *
  * Inspired by BitGo's WalletSimple.sol
  *  https://github.com/BitGo/eth-multisig-v2/blob/master/contracts/WalletSimple.sol
@@ -34,12 +35,14 @@ contract Multisig is Context, EIP712 {
     mapping(address => mapping(bytes32 => uint256)) public approvedHashes;
 
     event Called(address caller, uint256 value, bytes data, bytes returndata);
+    event SignerReplaced(address indexed oldSinger, address indexed newSinger);
 
     /**
      * Modifier that will execute internal code block only if the sender is an authorized signer on this wallet
      */
     modifier onlySigner() {
-        if (!isSigner(_msgSender())) {
+        (bool ok, ) = isSigner(_msgSender());
+        if (!ok) {
             revert("unauthorized msg sender");
         }
         _;
@@ -68,16 +71,18 @@ contract Multisig is Context, EIP712 {
     /**
      * @dev Determine if an address is a signer on this wallet
      * @param signer address to check
-     * returns boolean indicating whether address is signer or not
+     * returns
+     *  - boolean indicating whether address is signer or not,
+     *  - the index of target address
      */
-    function isSigner(address signer) public view returns (bool) {
+    function isSigner(address signer) public view returns (bool, uint256) {
         // Iterate through all signers on the wallet and
         for (uint256 i = 0; i < signers.length; i++) {
             if (signers[i] == signer) {
-                return true;
+                return (true, i);
             }
         }
-        return false;
+        return (false, 0);
     }
 
     /**
@@ -89,7 +94,8 @@ contract Multisig is Context, EIP712 {
         for (uint256 i = 0; i < signatures.length; i++) {
             address recoverd = hash.recover(signatures[i]);
 
-            if (!isSigner(recoverd)) {
+            (bool ok, ) = isSigner(recoverd);
+            if (!ok) {
                 revert("recoverd address is not signer");
             }
 
@@ -125,5 +131,18 @@ contract Multisig is Context, EIP712 {
         emit Called(_msgSender(), msg.value, data, returndata);
 
         return returndata;
+    }
+
+    /**
+     * @dev replace signer, only authorized by signer
+     * @param newSinger the new signer address
+     */
+    function replaceSinger(address newSinger) public {
+        (bool ok, uint256 i) = isSigner(_msgSender());
+        if (!ok) {
+            revert("unauthorized msg sender");
+        }
+        signers[i] = newSinger;
+        emit SignerReplaced(_msgSender(), newSinger);
     }
 }
