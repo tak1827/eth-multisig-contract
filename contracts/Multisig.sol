@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -19,7 +18,7 @@ import "./MockERC721.sol";
  * Inspired by BitGo's WalletSimple.sol
  *  https://github.com/BitGo/eth-multisig-v2/blob/master/contracts/WalletSimple.sol
  */
-contract Multisig is Context, EIP712 {
+contract Multisig is Context {
     using Address for address;
     using ECDSA for bytes32;
 
@@ -34,7 +33,7 @@ contract Multisig is Context, EIP712 {
     // Mapping to keep track of all hashes (message or transaction) that have been approved by ANY owners
     mapping(address => mapping(bytes32 => uint256)) public approvedHashes;
 
-    event Called(address caller, uint256 value, bytes data, bytes returndata);
+    event Called(address caller, bytes data, bytes returndata);
     event SignerReplaced(address indexed oldSinger, address indexed newSinger);
 
     /**
@@ -48,11 +47,7 @@ contract Multisig is Context, EIP712 {
         _;
     }
 
-    constructor(
-        string memory _name,
-        address[] memory _signers,
-        uint8 _threshold
-    ) EIP712(_name, version()) {
+    constructor(address[] memory _signers, uint8 _threshold) {
         require(_threshold >= MIN_THRESHOLD, "threshold is too low");
         require(
             _signers.length >= _threshold,
@@ -108,7 +103,7 @@ contract Multisig is Context, EIP712 {
     }
 
     /**
-     * @dev call controlled contract with value
+     * @dev call controlled contract without value
      * @param signatures required more than threshold signatures
      * @param data the calldata
      */
@@ -120,15 +115,14 @@ contract Multisig is Context, EIP712 {
         returns (bytes memory)
     {
         require(signatures.length + 1 >= threshold, "insufficient signatures");
-        _verifySigs(_hashTypedDataV4(keccak256(abi.encode(data))), signatures);
+        _verifySigs(ECDSA.toEthSignedMessageHash(keccak256(data)), signatures);
 
-        bytes memory returndata = controlled.functionCallWithValue(
+        bytes memory returndata = controlled.functionCall(
             data,
-            msg.value,
             "faild to call controlled"
         );
 
-        emit Called(_msgSender(), msg.value, data, returndata);
+        emit Called(_msgSender(), data, returndata);
 
         return returndata;
     }
