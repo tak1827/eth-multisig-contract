@@ -94,7 +94,7 @@ contract Multisig is Context {
                 revert("recoverd address is not signer");
             }
 
-            if (approvedHashes[recoverd][hash] > 1) {
+            if (approvedHashes[recoverd][hash] >= 1) {
                 revert("already approved signature");
             }
 
