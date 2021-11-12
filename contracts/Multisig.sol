@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -10,7 +9,7 @@ import "./MockERC721.sol";
 
 /**
  * @dev N of M Multisig Contract
- * - N and M are fixed at the deploy moment
+ * - M of N is fixed at the deploy moment
  * - The access controlled contract is instantiated at the deploy moment
  *   the controlled extend `Ownable`, so that controlled only via this multisig
  * - the length of signers CANNOT be changed once they are set

@@ -1,6 +1,6 @@
 # eth-multisig-contract
 Multisig EVM compatible chain smart contract
-- N and M are fixed at the deploy moment
+- M of N is fixed at the deploy moment
 - The access controlled contract is instantiated at the deploy moment
   the controlled extend `Ownable`, so that controlled only via this multisig
 - the length of signers CANNOT be changed once they are set
