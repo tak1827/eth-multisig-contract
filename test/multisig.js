@@ -94,6 +94,20 @@ contract("Multisig", function ([deployer, signer0, signer1, signer2, signer3, ow
       );
     });
 
+    it('failed by sender own sig', async function () {
+      const mintSigner = web3.eth.accounts.privateKeyToAccount(PRI_KEY);
+      const threshold = 2
+      const multisig = await Multisig.new([signer0, mintSigner.address, signer2, signer3], threshold)
+
+      const hash = web3.utils.sha3(abiEncodedCall);
+      const sig = await web3.eth.accounts.sign(hash, mintSigner.privateKey);
+
+      await expectRevert(
+        multisig.callControlled([sig.signature], abiEncodedCall, {from: mintSigner.address}),
+        "msg.sender should not be signer"
+      );
+    });
+
     it('failed by directly calling nft', async function () {
       const threshold = 2
       const multisig = await Multisig.new([signer0, signer1, signer2], threshold, {from: deployer})

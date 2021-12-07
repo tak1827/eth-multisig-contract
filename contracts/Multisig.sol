@@ -93,6 +93,10 @@ contract Multisig is Context {
                 revert("recoverd address is not signer");
             }
 
+            if (recoverd == _msgSender()) {
+                revert("msg.sender should not be signer");
+            }
+
             if (approvedHashes[recoverd][hash] >= 1) {
                 revert("already approved signature");
             }
